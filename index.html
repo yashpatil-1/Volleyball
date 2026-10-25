@@ -41,7 +41,8 @@
   .status { margin-top:12px; padding:10px 12px; border-radius:10px; background:#0d192a; color:var(--muted); font-size:.86rem; }
   .bench { display:flex; flex-wrap:wrap; gap:7px; margin-top:8px; }
   .chip { background:#263852; border:1px solid #40536e; border-radius:999px; padding:6px 10px; font-size:.82rem; }
-  .footer { text-align:center; color:var(--muted); font-size:.75rem; margin-top:18px; }
+  .footer { text-align:center; color:var(--muted); font-size:.75rem; margin-top:18px; line-height:1.8; }
+  .credit { display:inline-block; margin-top:4px; color:var(--accent); font-size:.8rem; font-weight:800; letter-spacing:.03em; }
   @media(max-width:780px) { body{padding:13px;} .layout{grid-template-columns:1fr;} .cell{min-height:98px;} .panel{padding:14px;} }
 </style>
 </head>
@@ -90,7 +91,7 @@
       <p class="small-note" style="margin-top:14px">Tip: If you change names, select <strong>Save lineup</strong>. This tracker is for rotation order and does not automatically manage substitutions or libero replacements.</p>
     </section>
   </div>
-  <div class="footer">Single-file tracker · Works offline in your browser · No account required</div>
+  <div class="footer">Single-file tracker · Works offline in your browser · No account required<br><span class="credit">Made with ❤️ by Yash Patil</span></div>
 </div>
 
 <script>
