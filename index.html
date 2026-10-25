@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Volleyball Rotation Tracker</title>
+<style>
+  :root { --bg:#0b1220; --panel:#131f33; --line:#d9e7ef; --accent:#43e0b5; --text:#f4f7fb; --muted:#a8b6c9; --orange:#ffbd69; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif; background:radial-gradient(circle at top,#172b43,var(--bg) 60%); color:var(--text); padding:22px; }
+  .wrap { max-width:1100px; margin:auto; }
+  header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px; margin-bottom:20px; }
+  h1 { margin:0; font-size:clamp(1.6rem,4vw,2.4rem); letter-spacing:-.04em; }
+  h1 span { color:var(--accent); }
+  .sub { color:var(--muted); margin:6px 0 0; }
+  .layout { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(280px,1fr); gap:18px; }
+  .panel { background:rgba(19,31,51,.92); border:1px solid #2a3b54; border-radius:18px; padding:18px; box-shadow:0 12px 35px #0002; }
+  .panel h2 { margin:0 0 14px; font-size:1.1rem; }
+  .court { background:#e98c4d; padding:12px; border:3px solid #fff2df; border-radius:10px; position:relative; }
+  .court-label { color:#fff; font-size:.75rem; text-transform:uppercase; letter-spacing:.12em; font-weight:800; text-align:center; margin:2px 0 10px; }
+  .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  .cell { background:#f8c28e; color:#182437; border:2px solid #fff2df; min-height:116px; border-radius:9px; padding:9px 6px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; position:relative; }
+  .pos { font-size:.76rem; font-weight:900; letter-spacing:.06em; background:#172b43; color:#fff; border-radius:50%; width:28px; height:28px; display:grid; place-items:center; margin-bottom:7px; }
+  .player { font-weight:800; font-size:clamp(.85rem,2vw,1rem); overflow-wrap:anywhere; }
+  .role { color:#674426; font-size:.7rem; margin-top:5px; }
+  .net { height:7px; background:repeating-linear-gradient(90deg,#fff 0 8px,#4a5665 8px 10px); border-radius:4px; margin:10px 0 8px; }
+  .net-label { text-align:center; color:#fff; font-size:.68rem; font-weight:800; letter-spacing:.12em; margin-bottom:4px; }
+  .back-label { text-align:center; color:#fff; font-size:.7rem; font-weight:800; letter-spacing:.1em; margin-top:9px; }
+  .actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:14px; }
+  button { border:0; border-radius:10px; padding:11px 14px; font-weight:800; cursor:pointer; transition:transform .12s,opacity .12s; }
+  button:active { transform:scale(.98); }
+  .primary { background:var(--accent); color:#06251f; flex:1; }
+  .secondary { background:#263852; color:var(--text); border:1px solid #40536e; }
+  .danger { background:#4a2734; color:#ffdce3; border:1px solid #784151; }
+  .field { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+  label { font-size:.8rem; color:var(--muted); font-weight:700; }
+  input { width:100%; padding:11px 12px; border-radius:9px; background:#0c1728; border:1px solid #354760; color:var(--text); font:inherit; outline:none; }
+  input:focus { border-color:var(--accent); }
+  .roster { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+  .small-note { color:var(--muted); font-size:.82rem; line-height:1.5; }
+  .status { margin-top:12px; padding:10px 12px; border-radius:10px; background:#0d192a; color:var(--muted); font-size:.86rem; }
+  .bench { display:flex; flex-wrap:wrap; gap:7px; margin-top:8px; }
+  .chip { background:#263852; border:1px solid #40536e; border-radius:999px; padding:6px 10px; font-size:.82rem; }
+  .footer { text-align:center; color:var(--muted); font-size:.75rem; margin-top:18px; }
+  @media(max-width:780px) { body{padding:13px;} .layout{grid-template-columns:1fr;} .cell{min-height:98px;} .panel{padding:14px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>🏐 Volleyball <span>Rotation Tracker</span></h1>
+      <p class="sub">Track your six players, positions and rotations live.</p>
+    </div>
+    <button class="secondary" id="resetBtn">Reset rotation</button>
+  </header>
+
+  <div class="layout">
+    <section class="panel">
+      <h2>On-court positions</h2>
+      <div class="court">
+        <div class="court-label">Opponent / Front of court</div>
+        <div class="grid" id="frontGrid"></div>
+        <div class="net"></div>
+        <div class="net-label">NET</div>
+        <div class="grid" id="backGrid"></div>
+        <div class="back-label">Back of court / Service side</div>
+      </div>
+      <div class="actions">
+        <button class="primary" id="plusBtn">↻ +1 Rotation</button>
+        <button class="secondary" id="minusBtn">↶ −1 Rotation</button>
+      </div>
+      <div class="status" id="status" aria-live="polite">Rotation 0 · Starting lineup</div>
+      <p class="small-note">Standard rotation: 1 → 6 → 5 → 4 → 3 → 2 → 1. Press +1 when your team wins the right to serve and must rotate. Use −1 to undo.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Player lineup</h2>
+      <p class="small-note">Enter the six players in their <strong>starting positions</strong>. Names stay attached to players as they rotate.</p>
+      <div class="roster" id="roster"></div>
+      <div class="field" style="margin-top:14px">
+        <label for="subInput">Substitutes / bench (optional)</label>
+        <input id="subInput" placeholder="e.g. Rahul, Arjun, Dev">
+      </div>
+      <div class="bench" id="bench"></div>
+      <div class="actions">
+        <button class="primary" id="saveBtn">Save lineup</button>
+        <button class="secondary" id="demoBtn">Load demo</button>
+      </div>
+      <p class="small-note" style="margin-top:14px">Tip: If you change names, select <strong>Save lineup</strong>. This tracker is for rotation order and does not automatically manage substitutions or libero replacements.</p>
+    </section>
+  </div>
+  <div class="footer">Single-file tracker · Works offline in your browser · No account required</div>
+</div>
+
+<script>
+  // Position map: each index is a court position; player IDs follow the rotation.
+  const startingPositions = [1, 2, 3, 4, 5, 6];
+  const defaultNames = ["Player 1", "Player 2", "Player 3", "Player 4", "Player 5", "Player 6"];
+  let players = defaultNames.map((name, i) => ({ id: i, name }));
+  // positionToPlayer maps position number (1..6) to player id.
+  let positionToPlayer = {1:0, 2:1, 3:2, 4:3, 5:4, 6:5};
+  let rotationCount = 0;
+
+  const roleNames = {1:"Right back · Server", 2:"Right front", 3:"Middle front", 4:"Left front", 5:"Left back", 6:"Middle back"};
+  const frontGrid = document.getElementById("frontGrid");
+  const backGrid = document.getElementById("backGrid");
+  const roster = document.getElementById("roster");
+  const status = document.getElementById("status");
+  const subInput = document.getElementById("subInput");
+
+  function playerAt(pos) {
+    const id = positionToPlayer[pos];
+    return players.find(p => p.id === id);
+  }
+  function cellHTML(pos) {
+    const p = playerAt(pos);
+    return `<div class="cell"><div class="pos">${pos}</div><div class="player">${escapeHTML(p ? p.name : "—")}</div><div class="role">${roleNames[pos]}</div></div>`;
+  }
+  function escapeHTML(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function renderCourt() {
+    // Front row from left to right: 4, 3, 2. Back row: 5, 6, 1.
+    frontGrid.innerHTML = [4,3,2].map(cellHTML).join("");
+    backGrid.innerHTML = [5,6,1].map(cellHTML).join("");
+    status.textContent = `Rotation ${rotationCount} · ${rotationCount === 0 ? "Starting lineup" : rotationCount > 0 ? "Rotated forward" : "Rotated backward"}`;
+  }
+  function renderRoster() {
+    roster.innerHTML = startingPositions.map(pos => {
+      const p = players.find(x => x.id === pos-1);
+      return `<div class="field"><label for="p${pos}">Starting position ${pos}</label><input id="p${pos}" value="${escapeHTML(p ? p.name : "")}" maxlength="32" placeholder="Player name"></div>`;
+    }).join("");
+    renderBench();
+  }
+  function renderBench() {
+    const names = subInput.value.split(",").map(x => x.trim()).filter(Boolean);
+    document.getElementById("bench").innerHTML = names.length ? names.map(n => `<span class="chip">${escapeHTML(n)}</span>`).join("") : '<span class="small-note">No substitutes added yet.</span>';
+  }
+  function saveLineup() {
+    players = startingPositions.map(pos => ({id:pos-1, name:document.getElementById(`p${pos}`).value.trim() || `Player ${pos}`}));
+    rotationCount = 0;
+    positionToPlayer = {1:0, 2:1, 3:2, 4:3, 5:4, 6:5};
+    renderCourt();
+    renderRoster();
+  }
+  function rotateForward() {
+    // Player in position 1 moves to 6; 6->5; 5->4; 4->3; 3->2; 2->1.
+    const old = {...positionToPlayer};
+    positionToPlayer[1] = old[2];
+    positionToPlayer[2] = old[3];
+    positionToPlayer[3] = old[4];
+    positionToPlayer[4] = old[5];
+    positionToPlayer[5] = old[6];
+    positionToPlayer[6] = old[1];
+    rotationCount++;
+    renderCourt();
+  }
+  function rotateBackward() {
+    const old = {...positionToPlayer};
+    positionToPlayer[1] = old[6];
+    positionToPlayer[2] = old[1];
+    positionToPlayer[3] = old[2];
+    positionToPlayer[4] = old[3];
+    positionToPlayer[5] = old[4];
+    positionToPlayer[6] = old[5];
+    rotationCount--;
+    renderCourt();
+  }
+  document.getElementById("plusBtn").addEventListener("click", rotateForward);
+  document.getElementById("minusBtn").addEventListener("click", rotateBackward);
+  document.getElementById("saveBtn").addEventListener("click", saveLineup);
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    rotationCount = 0;
+    positionToPlayer = {1:0, 2:1, 3:2, 4:3, 5:4, 6:5};
+    renderCourt();
+  });
+  document.getElementById("demoBtn").addEventListener("click", () => {
+    const demos = ["Aarav", "Yash", "Rohan", "Dev", "Kabir", "Aditya"];
+    demos.forEach((n,i) => document.getElementById(`p${i+1}`).value = n);
+    saveLineup();
+  });
+  subInput.addEventListener("input", renderBench);
+  renderRoster();
+  renderCourt();
+</script>
+</body>
+</html>
